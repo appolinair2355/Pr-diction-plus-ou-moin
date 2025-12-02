@@ -994,10 +994,10 @@ async def deploy_command(event):
             await event.respond("❌ Seul l'administrateur peut créer un package de déploiement")
             return
 
-        await event.respond("📦 **Création du package fin3488 en cours...**")
+        await event.respond("📦 **Création du package fi&777 en cours...**")
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        zip_filename = f"fin3488_{timestamp}.zip"
+        zip_filename = f"fi&777_{timestamp}.zip"
 
         # Liste des fichiers à inclure (tous à la racine)
         files_to_include = [
@@ -1016,7 +1016,7 @@ async def deploy_command(event):
             await client.send_file(
                 event.chat_id,
                 zip_filename,
-                caption=f"📦 **Package fin3488 créé avec succès!**\n\n✅ Fichier: {zip_filename}\n💾 Taille: {file_size:.2f} MB\n🎯 Tous les fichiers à la racine\n🚀 Prêt pour déploiement Render.com"
+                caption=f"📦 **Package fi&777 créé avec succès!**\n\n✅ Fichier: {zip_filename}\n💾 Taille: {file_size:.2f} MB\n🎯 Tous les fichiers à la racine\n🚀 Prêt pour déploiement Replit"
             )
             
             try:

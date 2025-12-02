@@ -281,44 +281,39 @@ class ExcelPredictionManager:
                 print(f"⚠️ Message sans tag de finalisation (ni ✅ ni 🔰) - ignoré")
                 return None, True
 
-            # Extraire les points
-            joueur_point, banquier_point = self.extract_points_and_winner(message_text)
+            # Extraire le point F du premier groupe G1
+            premier_groupe_point = get_first_group_total(message_text)
 
-            # --- NOUVELLE LOGIQUE DE VÉRIFICATION BASÉE SUR LES SEUILS DE POINTS DU JOUEUR (premier groupe) ---
+            # --- LOGIQUE DE VÉRIFICATION BASÉE UNIQUEMENT SUR LE POINT F DU PREMIER GROUPE (G1) ---
 
-            if joueur_point is None: # banquier_point n'est plus utilisé
-                # Si c'est une incohérence critique (✅ mal placé), marquer comme échec
-                if '✅' in message_text and not '🔰' in message_text:
-                    print(f"❌ CRITIQUE: Message avec ✅ incohérent - échec de la prédiction #{predicted_numero}")
-                    return '❌', False # MODIFIÉ : ⭕✍🏻 -> ❌
-                else:
-                    # Sinon, continuer à attendre (peut-être un message incomplet)
-                    print(f"⚠️ Impossible d'extraire les points, on continue")
-                    return None, True
+            if premier_groupe_point is None or premier_groupe_point < 0:
+                # Si impossible d'extraire le point, continuer à attendre
+                print(f"⚠️ Impossible d'extraire le point F du premier groupe (G1), on continue")
+                return None, True
 
-            # Déterminer le gagnant attendu à partir de la chaîne de caractères
+            # Déterminer le type de prédiction attendu
             expected = "banquier" if "banquier" in expected_winner.lower() else "joueur"
 
-            # Comparaison avec les seuils uniquement sur le point du JOUEUR
+            # Vérification selon le type de prédiction
             is_success = False
 
             if expected == "joueur":
-                # Si on attend JOUEUR (P+6,5), succès si point JOUEUR >= 7 (soit > 6.5)
-                if joueur_point >= 7:
+                # Si on attend JOUEUR (🅿️+6,5), succès si point F du G1 > 6 (soit >= 7)
+                if premier_groupe_point >= 7:
                     is_success = True
-                    print(f"✅ Succès JOUEUR : Point Joueur ({joueur_point}) >= 7 (Seuil 6.5)")
+                    print(f"✅ Succès JOUEUR : Point F du G1 ({premier_groupe_point}) >= 7 (> 6,5)")
                 else:
-                    print(f"❌ Échec JOUEUR : Point Joueur ({joueur_point}) < 7 (Seuil 6.5)")
+                    print(f"❌ Échec JOUEUR : Point F du G1 ({premier_groupe_point}) < 7 (<= 6,5)")
 
             elif expected == "banquier":
-                # Si on attend BANQUIER (M-4,,5), succès si point JOUEUR <= 4 (soit < 4.5)
-                if joueur_point <= 4:
+                # Si on attend BANQUIER (Ⓜ️-4,5), succès si point F du G1 < 5 (soit <= 4)
+                if premier_groupe_point <= 4:
                     is_success = True
-                    print(f"✅ Succès BANQUIER : Point Joueur ({joueur_point}) <= 4 (Seuil 4.5)")
+                    print(f"✅ Succès BANQUIER : Point F du G1 ({premier_groupe_point}) <= 4 (< 4,5)")
                 else:
-                    print(f"❌ Échec BANQUIER : Point Joueur ({joueur_point}) > 4 (Seuil 4.5)")
+                    print(f"❌ Échec BANQUIER : Point F du G1 ({premier_groupe_point}) > 4 (>= 4,5)")
 
-            print(f"📊 Point Joueur: {joueur_point}, Attendu: {expected}, Succès: {is_success}")
+            print(f"📊 Point F du G1: {premier_groupe_point}, Attendu: {expected}, Succès: {is_success}")
 
             # Vérifier si on doit continuer la vérification
 

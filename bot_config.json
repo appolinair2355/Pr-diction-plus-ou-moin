@@ -171,6 +171,54 @@
       "created_at": "2025-12-02 03:27:58",
       "attempts": 1,
       "status": "\u27051\ufe0f\u20e3"
+    },
+    "223": {
+      "message_id": 507,
+      "channel_id": -1002617781803,
+      "expected": "banquier",
+      "base_text": "\ud83d\udd35223:\u24c2\ufe0f-4,,5\ud83d\udd35statut :\u23f3",
+      "source_game": 221,
+      "t_value": 6.0,
+      "verified": true,
+      "created_at": "2025-12-02 03:40:36",
+      "attempts": 2,
+      "status": "\u27052\ufe0f\u20e3"
+    },
+    "242": {
+      "message_id": 508,
+      "channel_id": -1002617781803,
+      "expected": "joueur",
+      "base_text": "\ud83d\udd35242:\ud83c\udd7f\ufe0f+6,5\ud83d\udd35statut :\u23f3",
+      "source_game": 240,
+      "t_value": 17.0,
+      "verified": true,
+      "created_at": "2025-12-02 03:59:25",
+      "attempts": 1,
+      "status": "\u27051\ufe0f\u20e3"
+    },
+    "245": {
+      "message_id": 509,
+      "channel_id": -1002617781803,
+      "expected": "joueur",
+      "base_text": "\ud83d\udd35245:\ud83c\udd7f\ufe0f+6,5\ud83d\udd35statut :\u23f3",
+      "source_game": 243,
+      "t_value": 13.0,
+      "verified": true,
+      "created_at": "2025-12-02 04:03:06",
+      "attempts": 6,
+      "status": "\u274c"
+    },
+    "247": {
+      "message_id": 510,
+      "channel_id": -1002617781803,
+      "expected": "joueur",
+      "base_text": "\ud83d\udd35247:\ud83c\udd7f\ufe0f+6,5\ud83d\udd35statut :\u23f3",
+      "source_game": 245,
+      "t_value": 13.0,
+      "verified": true,
+      "created_at": "2025-12-02 04:05:02",
+      "status": "\u274c",
+      "attempts": 6
     }
   }
 }
