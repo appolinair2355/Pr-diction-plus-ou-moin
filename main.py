@@ -655,6 +655,14 @@ async def verify_active_predictions(game_number: int, message_text: str):
     if not is_finalized_message(message_text):
         return
     
+    # Extraire le point du premier groupe une seule fois
+    premier_groupe_point = get_first_group_total(message_text)
+    if premier_groupe_point is None or premier_groupe_point < 0:
+        print(f"⚠️ Impossible d'extraire le point du premier groupe du jeu #{game_number}")
+        return
+    
+    print(f"📊 Vérification des prédictions - Jeu #{game_number}, Point premier groupe: {premier_groupe_point}")
+    
     for pred_numero_str in list(active_predictions.keys()):
         pred_numero = int(pred_numero_str)
         pred_data = active_predictions[pred_numero_str]
@@ -702,25 +710,19 @@ async def verify_active_predictions(game_number: int, message_text: str):
             if not msg_id or not channel_id:
                 continue
             
-            # Extraire le point du premier groupe
-            premier_groupe_point, _ = excel_manager.extract_points_and_winner(message_text)
-            
-            if premier_groupe_point is None:
-                print(f"⚠️ Impossible d'extraire le point du premier groupe du jeu #{game_number}")
-                continue
+            print(f"🔍 Vérification Prédiction #{pred_numero} (attendu: {expected}) avec Jeu #{game_number} (offset {current_offset})")
+            print(f"   Point premier groupe: {premier_groupe_point}")
             
             # Vérifier si la prédiction est réussie
             is_success = False
             if expected == "joueur":
                 # P+6,5 : succès si point > 6.5
-                if premier_groupe_point > 6.5:
-                    is_success = True
-                    print(f"✅ Prédiction #{pred_numero} JOUEUR (P+6,5) réussie à N+{current_offset}: point={premier_groupe_point} > 6.5")
+                is_success = premier_groupe_point > 6.5
+                print(f"   Joueur: {premier_groupe_point} > 6.5 ? {is_success}")
             elif expected == "banquier":
                 # M-4,5 : succès si point < 4.5
-                if premier_groupe_point < 4.5:
-                    is_success = True
-                    print(f"✅ Prédiction #{pred_numero} BANQUIER (M-4,5) réussie à N+{current_offset}: point={premier_groupe_point} < 4.5")
+                is_success = premier_groupe_point < 4.5
+                print(f"   Banquier: {premier_groupe_point} < 4.5 ? {is_success}")
             
             # Mettre à jour le nombre d'essais
             pred_data["attempts"] = current_offset
@@ -736,12 +738,12 @@ async def verify_active_predictions(game_number: int, message_text: str):
                     pred_data["verified"] = True
                     pred_data["status"] = status_emoji
                     save_config()
-                    print(f"✅ Prédiction #{pred_numero} validée: {status_emoji} (N+{current_offset})")
+                    print(f"✅ Prédiction #{pred_numero} validée: {status_emoji} (N+{current_offset}, point={premier_groupe_point})")
                 except Exception as e:
                     print(f"❌ Erreur mise à jour prédiction #{pred_numero}: {e}")
             else:
                 # Échec sur cet essai
-                print(f"⏳ Prédiction #{pred_numero} échec à N+{current_offset} (essai {current_offset + 1}/{r_offset + 1})")
+                print(f"⏳ Prédiction #{pred_numero} échec à N+{current_offset} (essai {current_offset + 1}/{r_offset + 1}, point={premier_groupe_point})")
                 
                 # Si c'est le dernier essai autorisé, marquer comme échec définitif
                 if current_offset >= r_offset:
@@ -992,10 +994,10 @@ async def deploy_command(event):
             await event.respond("❌ Seul l'administrateur peut créer un package de déploiement")
             return
 
-        await event.respond("📦 **Création du package fin2025 en cours...**")
+        await event.respond("📦 **Création du package fin3488 en cours...**")
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        zip_filename = f"fin2025_{timestamp}.zip"
+        zip_filename = f"fin3488_{timestamp}.zip"
 
         # Liste des fichiers à inclure (tous à la racine)
         files_to_include = [
@@ -1014,7 +1016,7 @@ async def deploy_command(event):
             await client.send_file(
                 event.chat_id,
                 zip_filename,
-                caption=f"📦 **Package fin2025 créé avec succès!**\n\n✅ Fichier: {zip_filename}\n💾 Taille: {file_size:.2f} MB\n🎯 Tous les fichiers à la racine\n🚀 Prêt pour déploiement Replit"
+                caption=f"📦 **Package fin3488 créé avec succès!**\n\n✅ Fichier: {zip_filename}\n💾 Taille: {file_size:.2f} MB\n🎯 Tous les fichiers à la racine\n🚀 Prêt pour déploiement Render.com"
             )
             
             try:

@@ -147,6 +147,30 @@
       "created_at": "2025-12-01 02:04:07",
       "attempts": 1,
       "status": "\u27051\ufe0f\u20e3"
+    },
+    "208": {
+      "message_id": 505,
+      "channel_id": -1002617781803,
+      "expected": "banquier",
+      "base_text": "\ud83d\udd35208:\u24c2\ufe0f-4,,5\ud83d\udd35statut :\u23f3",
+      "source_game": 206,
+      "t_value": 9.0,
+      "verified": true,
+      "created_at": "2025-12-02 03:26:06",
+      "attempts": 1,
+      "status": "\u27051\ufe0f\u20e3"
+    },
+    "210": {
+      "message_id": 506,
+      "channel_id": -1002617781803,
+      "expected": "banquier",
+      "base_text": "\ud83d\udd35210:\u24c2\ufe0f-4,,5\ud83d\udd35statut :\u23f3",
+      "source_game": 208,
+      "t_value": 3.0,
+      "verified": true,
+      "created_at": "2025-12-02 03:27:58",
+      "attempts": 1,
+      "status": "\u27051\ufe0f\u20e3"
     }
   }
 }
