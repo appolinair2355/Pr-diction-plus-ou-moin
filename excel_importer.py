@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 from openpyxl import load_workbook
+from parsing_utils import get_first_group_total
 
 class ExcelPredictionManager:
     def __init__(self):
@@ -321,7 +322,7 @@ class ExcelPredictionManager:
                 # ✅ SUCCÈS ! Terminer la vérification.
                 real_offset = game_number - predicted_numero
 
-                print(f"✅ Prédiction Excel #{predicted_numero} réussie sur jeu #{game_number} avec point Joueur {joueur_point}")
+                print(f"✅ Prédiction Excel #{predicted_numero} réussie sur jeu #{game_number} avec point G1 {premier_groupe_point}")
                 print(f"   Offset: {real_offset}")
 
                 # L'emoji correspond à l'offset (0 = 1er essai, 1 = 2ème essai, etc.)

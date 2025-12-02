@@ -15,6 +15,7 @@ from yaml_manager import init_database, db
 from excel_importer import ExcelPredictionManager
 from aiohttp import web
 import threading
+from parsing_utils import get_first_group_total
 
 # Load environment variables
 load_dotenv()
@@ -399,15 +400,15 @@ async def force_set_display_channel(event):
 async def set_a_offset(event):
     """Set or show the prediction offset value (N+a)"""
     global a_offset
-    
+
     try:
         if ADMIN_ID and event.sender_id != ADMIN_ID:
             await event.respond("❌ Seul l'administrateur peut modifier ce paramètre")
             return
-        
+
         match = event.pattern_match
         new_value = match.group(1)
-        
+
         if new_value:
             a_offset = int(new_value)
             save_config()
@@ -415,7 +416,7 @@ async def set_a_offset(event):
             print(f"Décalage a_offset mis à jour: {a_offset}")
         else:
             await event.respond(f"📊 **Décalage actuel: a = {a_offset}**\n\n🎯 Les prédictions sont: N + {a_offset}\n\n💡 Pour modifier: `/a [valeur]`\nExemple: `/a 3` pour N+3")
-    
+
     except Exception as e:
         print(f"Erreur dans set_a_offset: {e}")
         await event.respond(f"❌ Erreur: {e}")
@@ -424,26 +425,26 @@ async def set_a_offset(event):
 async def set_r_offset(event):
     """Set or show the verification offset value (r)"""
     global r_offset
-    
+
     try:
         if ADMIN_ID and event.sender_id != ADMIN_ID:
             await event.respond("❌ Seul l'administrateur peut modifier ce paramètre")
             return
-        
+
         match = event.pattern_match
         new_value = match.group(1)
-        
+
         if new_value:
             value = int(new_value)
             if value < 0 or value > 10:
                 await event.respond("❌ **Valeur invalide**\n\nL'offset de vérification doit être entre **0** et **10**.\n\n💡 Exemple: `/r 2` pour vérifier N+0, N+1, N+2")
                 return
-            
+
             r_offset = value
             save_config()
-            
+
             emoji_list = "\n".join([f"• N+{i}: {VERIFICATION_EMOJIS[i]}" for i in range(0, r_offset + 1)])
-            
+
             await event.respond(f"""✅ **Offset de vérification mis à jour**
 
 📊 Nouvelle valeur: **r = {r_offset}**
@@ -460,7 +461,7 @@ async def set_r_offset(event):
             print(f"Offset r_offset mis à jour: {r_offset}")
         else:
             emoji_list = "\n".join([f"• N+{i}: {VERIFICATION_EMOJIS[i]}" for i in range(0, r_offset + 1)])
-            
+
             await event.respond(f"""📊 **Offset de vérification actuel: r = {r_offset}**
 
 🎯 Vérification de N+0 à N+{r_offset}
@@ -470,7 +471,7 @@ async def set_r_offset(event):
 
 💡 Pour modifier: `/r [valeur]` (0-10)
 Exemple: `/r 2` pour vérifier N+0, N+1, N+2""")
-    
+
     except Exception as e:
         print(f"Erreur dans set_r_offset: {e}")
         await event.respond(f"❌ Erreur: {e}")
@@ -515,27 +516,27 @@ def has_six_in_both_groups(message_text: str) -> bool:
     try:
         pattern = r"[✅🔰]?\d+\(([^)]+)\)"
         matches = re.findall(pattern, message_text)
-        
+
         if len(matches) < 2:
             return False
-        
+
         # Vérifier le premier groupe
         first_group = matches[0]
         card_pattern = r'(\d+|[AKQJ])[♠️♥️♦️♣️♠♥♦♣]'
         first_group_cards = re.findall(card_pattern, first_group)
         has_six_in_first = any(card_value == '6' for card_value in first_group_cards)
-        
+
         # Vérifier le second groupe
         second_group = matches[1]
         second_group_cards = re.findall(card_pattern, second_group)
         has_six_in_second = any(card_value == '6' for card_value in second_group_cards)
-        
+
         if has_six_in_first and has_six_in_second:
             print(f"⚠️ EXCLUSION: Premier groupe contient '6' ET second groupe contient '6'")
             print(f"   Premier groupe: {first_group} (cartes: {first_group_cards})")
             print(f"   Second groupe: {second_group} (cartes: {second_group_cards})")
             return True
-        
+
         return False
     except Exception as e:
         print(f"Erreur has_six_in_both_groups: {e}")
@@ -550,13 +551,13 @@ def count_sixes_in_groups(message_text: str) -> int:
         pattern = r"[✅🔰]?\d+\(([^)]+)\)"
         matches = re.findall(pattern, message_text)
         total_sixes = 0
-        
+
         for group in matches:
             card_pattern = r'(\d+|[AKQJ])[♠️♥️♦️♣️♠♥♦♣]'
             cards = re.findall(card_pattern, group)
             sixes_in_group = sum(1 for card_value in cards if card_value == '6')
             total_sixes += sixes_in_group
-        
+
         print(f"📊 Nombre total de '6' trouvés dans tous les groupes: {total_sixes}")
         return total_sixes
     except Exception as e:
@@ -615,25 +616,25 @@ def should_skip_prediction(message_text: str) -> bool:
     """
     if is_tie_game(message_text):
         return True
-    
+
     # Vérifier si les deux groupes contiennent chacun au moins un 6
     if has_six_in_both_groups(message_text):
         print(f"⚠️ Les deux groupes contiennent chacun une carte '6' - pas de prédiction")
         return True
-    
+
     # Vérifier s'il y a 2 valeurs '6' ou plus
     total_sixes = count_sixes_in_groups(message_text)
     if total_sixes >= 2:
         print(f"⚠️ Trouvé {total_sixes} cartes '6' dans les groupes - pas de prédiction")
         return True
-    
+
     first_group_total = get_first_group_total(message_text)
     has_six = has_six_in_first_group(message_text)
-    
+
     if first_group_total == 6 and has_six:
         print(f"⚠️ Total premier groupe = 6 ET contient un 6 - pas de prédiction")
         return True
-    
+
     return False
 
 def is_finalized_message(message_text: str) -> bool:
@@ -643,7 +644,7 @@ def is_finalized_message(message_text: str) -> bool:
 async def verify_active_predictions(game_number: int, message_text: str):
     """
     Vérifie les prédictions actives basées sur les messages du canal source.
-    
+
     Logique de vérification séquentielle:
     1. Vérifie d'abord à N+0 (numéro exact prédit)
     2. Si échec et r ≥ 1, continue à N+1
@@ -651,42 +652,42 @@ async def verify_active_predictions(game_number: int, message_text: str):
     4. Marque ❌ si échec après tous les essais autorisés par r_offset
     """
     global active_predictions
-    
+
     if not is_finalized_message(message_text):
         return
-    
+
     # Extraire le point du premier groupe une seule fois
     premier_groupe_point = get_first_group_total(message_text)
     if premier_groupe_point is None or premier_groupe_point < 0:
         print(f"⚠️ Impossible d'extraire le point du premier groupe du jeu #{game_number}")
         return
-    
+
     print(f"📊 Vérification des prédictions - Jeu #{game_number}, Point premier groupe: {premier_groupe_point}")
-    
+
     for pred_numero_str in list(active_predictions.keys()):
         pred_numero = int(pred_numero_str)
         pred_data = active_predictions[pred_numero_str]
-        
+
         # Ignorer si déjà vérifiée
         if pred_data.get("verified", False):
             continue
-        
+
         # Récupérer le nombre d'essais déjà effectués
-        attempts_done = pred_data.get("attempts", 0)
-        
+        attempts_done = pred_data.get("attempts", -1)
+
         # Si le jeu actuel est avant notre prédiction, ignorer
         if game_number < pred_numero:
             continue
-        
+
         # Calculer l'offset actuel (combien de jeux après la prédiction)
         current_offset = game_number - pred_numero
-        
+
         # Si on a dépassé le nombre maximum d'essais autorisés, marquer comme échec
         if current_offset > r_offset:
             msg_id = pred_data.get("message_id")
             channel_id = pred_data.get("channel_id")
             base_text = pred_data.get("base_text", "")
-            
+
             if msg_id and channel_id:
                 new_text = base_text.replace("statut :⏳", "statut :❌")
                 try:
@@ -694,49 +695,47 @@ async def verify_active_predictions(game_number: int, message_text: str):
                     print(f"❌ Prédiction #{pred_numero} expirée après offset {r_offset}")
                 except Exception as e:
                     print(f"❌ Erreur mise à jour prédiction expirée #{pred_numero}: {e}")
-            
+
             pred_data["verified"] = True
             pred_data["status"] = "❌"
             pred_data["attempts"] = r_offset + 1
             save_config()
             continue
-        
+
         # Vérifier seulement si c'est un offset qu'on n'a pas encore testé
         if current_offset > attempts_done:
             msg_id = pred_data.get("message_id")
             channel_id = pred_data.get("channel_id")
             expected = pred_data.get("expected", "")
-            
+
             if not msg_id or not channel_id:
                 continue
-            
+
             print(f"🔍 Vérification Prédiction #{pred_numero} (attendu: {expected}) avec Jeu #{game_number} (offset {current_offset})")
             print(f"   Point premier groupe: {premier_groupe_point}")
-            
+
             # Vérifier si la prédiction est réussie
             is_success = False
             if expected == "joueur":
-                # P+6,5 : succès si point > 6.5
-                is_success = premier_groupe_point > 6.5
-                print(f"   Joueur: {premier_groupe_point} > 6.5 ? {is_success}")
+                # P+6,5 : succès si point >= 7 (> 6.5)
+                is_success = premier_groupe_point >= 7
+                print(f"   Joueur: {premier_groupe_point} >= 7 ? {is_success}")
             elif expected == "banquier":
-                # M-4,5 : succès si point < 4.5
-                is_success = premier_groupe_point < 4.5
-                print(f"   Banquier: {premier_groupe_point} < 4.5 ? {is_success}")
-            
-            # Mettre à jour le nombre d'essais
-            pred_data["attempts"] = current_offset
-            
+                # M-4,5 : succès si point <= 4 (< 4.5)
+                is_success = premier_groupe_point <= 4
+                print(f"   Banquier: {premier_groupe_point} <= 4 ? {is_success}")
+
             if is_success:
                 # Succès: marquer avec l'emoji approprié et arrêter
                 status_emoji = VERIFICATION_EMOJIS.get(current_offset, f"✅{current_offset}")
                 base_text = pred_data.get("base_text", "")
                 new_text = base_text.replace("statut :⏳", f"statut :{status_emoji}")
-                
+
                 try:
                     await client.edit_message(channel_id, msg_id, new_text)
                     pred_data["verified"] = True
                     pred_data["status"] = status_emoji
+                    pred_data["attempts"] = current_offset
                     save_config()
                     print(f"✅ Prédiction #{pred_numero} validée: {status_emoji} (N+{current_offset}, point={premier_groupe_point})")
                 except Exception as e:
@@ -744,12 +743,15 @@ async def verify_active_predictions(game_number: int, message_text: str):
             else:
                 # Échec sur cet essai
                 print(f"⏳ Prédiction #{pred_numero} échec à N+{current_offset} (essai {current_offset + 1}/{r_offset + 1}, point={premier_groupe_point})")
-                
+
+                # Mettre à jour le nombre d'essais effectués
+                pred_data["attempts"] = current_offset
+
                 # Si c'est le dernier essai autorisé, marquer comme échec définitif
                 if current_offset >= r_offset:
                     base_text = pred_data.get("base_text", "")
                     new_text = base_text.replace("statut :⏳", "statut :❌")
-                    
+
                     try:
                         await client.edit_message(channel_id, msg_id, new_text)
                         pred_data["verified"] = True
@@ -855,29 +857,25 @@ async def start_command(event):
 2. Je vous enverrai automatiquement une invitation privée
 3. Répondez avec `/set_stat [ID]` ou `/set_display [ID]`
 
-**Commandes Admin** :
-• `/start` - Ce message
-• `/status` - État du bot
-• `/a [valeur]` - Définir le décalage (N+a) [actuel: {a_offset}]
-• `/sta` - Statistiques des prédictions
-• `/reset` - Réinitialiser toutes les données
+**Commandes Principales** :
+• `/help` - Liste complète des commandes
+• `/status` - État détaillé du bot
 • `/ni` - Informations système
-• `/set_stat [ID]` - Configurer canal source
-• `/set_display [ID]` - Configurer canal diffusion
-• `/force_set_stat [ID]` - Forcer config canal source
-• `/force_set_display [ID]` - Forcer config canal diffusion
+• `/sta` - Statistiques Excel
 
 **Logique de prédiction** :
 1. Détection d'un "6" dans le premier groupe de cartes
 2. Vérification que #T existe
-3. Si #T > 10.5 → 🔵N+a:🅿️+6,5🔵statut :⏳ (Joueur)
-4. Si #T ≤ 10.5 → 🔵N+a:Ⓜ️-4,,5🔵statut :⏳ (Banquier)
+3. Si #T > 10.5 → 🔵N+{a_offset}:🅿️+6,5🔵statut :⏳ (Joueur)
+4. Si #T ≤ 10.5 → 🔵N+{a_offset}:Ⓜ️-4,,5🔵statut :⏳ (Banquier)
 
 **Exclusions** :
 • Match nul (🔰 entre groupes avec 🟣#X)
 • Total premier groupe = 6 ET carte 6 présente
+• 2 cartes "6" ou plus dans tous les groupes
 
-Le bot est prêt à analyser vos jeux ! 🚀"""
+Le bot est prêt à analyser vos jeux ! 🚀
+Tapez `/help` pour voir toutes les commandes."""
 
         await event.respond(welcome_msg)
         print(f"Message de bienvenue envoyé à l'utilisateur {event.sender_id}")
@@ -890,6 +888,54 @@ Le bot est prêt à analyser vos jeux ! 🚀"""
 
     except Exception as e:
         print(f"Erreur dans start_command: {e}")
+
+@client.on(events.NewMessage(pattern='/help'))
+async def help_command(event):
+    """Liste complète des commandes disponibles"""
+    try:
+        help_msg = f"""📖 **Liste Complète des Commandes**
+
+**🔧 Configuration:**
+• `/set_stat [ID]` - Configurer canal source
+• `/set_display [ID]` - Configurer canal diffusion
+• `/force_set_stat [ID]` - Forcer config canal source
+• `/force_set_display [ID]` - Forcer config canal diffusion
+
+**⚙️ Paramètres:**
+• `/a [valeur]` - Décalage prédiction (N+a) [actuel: {a_offset}]
+• `/r [valeur]` - Offset vérification (0-10) [actuel: {r_offset}]
+
+**📊 Informations:**
+• `/status` - Statut détaillé du bot
+• `/sta` - Statistiques prédictions Excel
+• `/ni` - Informations système
+
+**🗂️ Gestion Excel:**
+• Envoyer fichier Excel → Import automatique
+• `/excel_clear` - Effacer prédictions Excel
+
+**🔄 Maintenance:**
+• `/reset` - Réinitialiser les données
+• `/deploy` - Créer package Render.com (zip 'jou')
+
+**ℹ️ Aide:**
+• `/start` - Message de bienvenue
+• `/help` - Cette liste
+
+**📋 Configuration Actuelle:**
+• Décalage: N+{a_offset}
+• Vérification: jusqu'à N+{r_offset}
+• Canal stats: {detected_stat_channel or 'Non configuré'}
+• Canal display: {detected_display_channel or 'Non configuré'}
+
+✅ Toutes les commandes sont réservées à l'admin"""
+
+        await event.respond(help_msg)
+        print(f"Commande /help exécutée par {event.sender_id}")
+
+    except Exception as e:
+        print(f"Erreur dans help_command: {e}")
+        await event.respond(f"❌ Erreur: {e}")
 
 # --- COMMANDES ADMINISTRATIVES ---
 @client.on(events.NewMessage(pattern='/status'))
@@ -904,18 +950,39 @@ async def show_status(event):
         load_config()
 
         config_status = "✅ Sauvegardée" if os.path.exists(CONFIG_FILE) else "❌ Non sauvegardée"
+        
+        # Compter les prédictions actives
+        active_count = len([p for p in active_predictions.values() if not p.get("verified", False)])
+        verified_count = len([p for p in active_predictions.values() if p.get("verified", False)])
+        
+        # Stats Excel
+        excel_stats = excel_manager.get_stats()
+        
         status_msg = f"""📊 **Statut du Bot**
 
-Canal statistiques: {'✅ Configuré' if detected_stat_channel else '❌ Non configuré'} ({detected_stat_channel})
-Canal diffusion: {'✅ Configuré' if detected_display_channel else '❌ Non configuré'} ({detected_display_channel})
-⏱️ Intervalle de prédiction: {prediction_interval} minutes
-Configuration persistante: {config_status}
-Prédictions actives: {len(predictor.prediction_status)}
-Dernières prédictions: {len(predictor.last_predictions)}
-"""
+🔧 **Configuration:**
+• Canal statistiques: {'✅ Configuré' if detected_stat_channel else '❌ Non configuré'} ({detected_stat_channel or 'Aucun'})
+• Canal diffusion: {'✅ Configuré' if detected_display_channel else '❌ Non configuré'} ({detected_display_channel or 'Aucun'})
+• Décalage prédiction (a): N+{a_offset}
+• Offset vérification (r): {r_offset}
+• Configuration: {config_status}
+
+📈 **Prédictions Automatiques:**
+• Actives (en attente): {active_count}
+• Vérifiées: {verified_count}
+• Total: {len(active_predictions)}
+
+📊 **Prédictions Excel:**
+• Total: {excel_stats['total']}
+• Lancées: {excel_stats['launched']}
+• En attente: {excel_stats['pending']}
+
+✅ **Bot opérationnel** - Développé par Sossou Kouamé Appolinaire"""
+        
         await event.respond(status_msg)
     except Exception as e:
         print(f"Erreur dans show_status: {e}")
+        await event.respond(f"❌ Erreur: {e}")
 
 @client.on(events.NewMessage(pattern='/reset'))
 async def reset_data(event):
@@ -953,31 +1020,39 @@ async def ni_command(event):
         stats_channel = detected_stat_channel or 'Non configuré'
         display_channel = detected_display_channel or 'Non configuré'
 
-        # Compter les prédictions actives depuis le predictor
-        active_predictions = len([s for s in predictor.prediction_status.values() if s == '⌛'])
+        # Compter les prédictions actives
+        auto_active = len([p for p in active_predictions.values() if not p.get("verified", False)])
+        excel_stats = excel_manager.get_stats()
 
         msg = f"""🎯 **Système de Prédiction NI - Statut**
 
-📊 **Configuration actuelle**:
+📊 **Configuration actuelle:**
 • Canal source: {stats_channel}
 • Canal affichage: {display_channel}
-• Prédictions Excel actives: {active_predictions}
+• Décalage (a): N+{a_offset}
+• Offset vérification (r): {r_offset}
 • Intervalle: {prediction_interval} minute(s)
 
-🎮 **Fonctionnalités**:
-• Prédictions basées uniquement sur fichier Excel
-• Vérification séquentielle avec offsets 0→1→2
-• Format Joueur: "🔵XXX:🅿️+6,5🔵statut :⏳"
-• Format Banquier: "🔵XXX:Ⓜ️-4,,5🔵statut :⏳"
+🎮 **Prédictions Actives:**
+• Automatiques: {auto_active}
+• Excel (lancées): {excel_stats['launched']}
+• Excel (en attente): {excel_stats['pending']}
 
-🔧 **Commandes disponibles**:
-• `/set_stat [ID]` - Configurer canal source
-• `/set_display [ID]` - Configurer canal affichage
-• `/excel_status` - Voir prédictions Excel
-• `/reset` - Réinitialiser les données
-• `/deploy` - Créer package de déploiement
+📋 **Logique de Prédiction:**
+• Détection du "6" dans le G1
+• Si #T > 10.5 → Joueur (🅿️+6,5)
+• Si #T ≤ 10.5 → Banquier (Ⓜ️-4,,5)
+• Vérification séquentielle N+0 → N+{r_offset}
 
-✅ **Bot opérationnel** - Version 2025"""
+🔧 **Commandes principales:**
+• `/status` - Statut détaillé
+• `/sta` - Stats Excel
+• `/a [valeur]` - Modifier décalage
+• `/r [valeur]` - Modifier offset vérification
+• `/deploy` - Package Render.com
+• `/reset` - Réinitialiser
+
+✅ **Bot opérationnel** - Développé par Sossou Kouamé Appolinaire"""
 
         await event.respond(msg)
         print(f"Commande /ni exécutée par {event.sender_id}")
@@ -988,49 +1063,100 @@ async def ni_command(event):
 
 @client.on(events.NewMessage(pattern='/deploy'))
 async def deploy_command(event):
-    """Créer un package zip de déploiement avec tous les fichiers à la racine"""
+    """Créer un package zip de déploiement Render.com nommé 'jou'"""
     try:
         if ADMIN_ID and event.sender_id != ADMIN_ID:
             await event.respond("❌ Seul l'administrateur peut créer un package de déploiement")
             return
 
-        await event.respond("📦 **Création du package fi&777 en cours...**")
+        await event.respond("📦 **Création du package Render.com 'jou' en cours...**")
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        zip_filename = f"fi&777_{timestamp}.zip"
+        zip_filename = f"jou_{timestamp}.zip"
 
-        # Liste des fichiers à inclure (tous à la racine)
+        # Liste complète des fichiers pour Render.com
         files_to_include = [
-            'main.py', 'predictor.py', 'excel_importer.py', 'yaml_manager.py',
-            'requirements.txt', 'bot_config.json', 'Procfile', 'render.yaml'
+            'main.py',
+            'predictor.py',
+            'excel_importer.py',
+            'yaml_manager.py',
+            'parsing_utils.py',
+            'requirements.txt',
+            'Procfile',
+            'render.yaml',
+            '.gitignore'
         ]
 
+        # Fichiers optionnels (si existants)
+        optional_files = [
+            'bot_config.json',
+            'excel_predictions.yaml',
+            '.env.example'
+        ]
+
+        files_added = []
+        files_skipped = []
+
         with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Ajouter les fichiers requis
             for file in files_to_include:
                 if os.path.exists(file):
-                    zipf.write(file, file)  # Fichier à la racine du zip
+                    zipf.write(file, file)
+                    files_added.append(file)
+                    print(f"✅ Ajouté: {file}")
+                else:
+                    files_skipped.append(file)
+                    print(f"⚠️ Fichier manquant: {file}")
+
+            # Ajouter les fichiers optionnels
+            for file in optional_files:
+                if os.path.exists(file):
+                    zipf.write(file, file)
+                    files_added.append(file)
+                    print(f"✅ Ajouté (optionnel): {file}")
 
         if os.path.exists(zip_filename):
             file_size = os.path.getsize(zip_filename) / (1024 * 1024)
-            
+
+            caption = f"""📦 **Package Render.com 'jou' créé avec succès!**
+
+✅ Fichier: `{zip_filename}`
+💾 Taille: {file_size:.2f} MB
+📝 Fichiers inclus: {len(files_added)}
+
+**Fichiers ajoutés:**
+{chr(10).join([f'• {f}' for f in files_added[:10]])}
+{f'... et {len(files_added) - 10} autres' if len(files_added) > 10 else ''}
+
+**Instructions Render.com:**
+1. Créer un nouveau Web Service
+2. Télécharger ce zip
+3. Build Command: `pip install -r requirements.txt`
+4. Start Command: `python main.py`
+5. Configurer les variables d'environnement (API_ID, API_HASH, BOT_TOKEN, ADMIN_ID)
+
+🚀 Prêt pour déploiement sur Render.com!"""
+
             await client.send_file(
                 event.chat_id,
                 zip_filename,
-                caption=f"📦 **Package fi&777 créé avec succès!**\n\n✅ Fichier: {zip_filename}\n💾 Taille: {file_size:.2f} MB\n🎯 Tous les fichiers à la racine\n🚀 Prêt pour déploiement Replit"
+                caption=caption
             )
-            
+
+            # Nettoyer le fichier temporaire
             try:
                 os.remove(zip_filename)
-            except:
-                pass
-            
-            print(f"✅ Package {zip_filename} créé et envoyé")
+                print(f"🗑️ Fichier temporaire supprimé: {zip_filename}")
+            except Exception as e:
+                print(f"⚠️ Impossible de supprimer {zip_filename}: {e}")
+
+            print(f"✅ Package {zip_filename} créé et envoyé ({len(files_added)} fichiers)")
         else:
             await event.respond("❌ Erreur: Impossible de créer le fichier zip")
-            
+
     except Exception as e:
         print(f"❌ Erreur deploy_command: {e}")
-        await event.respond(f"❌ Erreur: {e}")
+        await event.respond(f"❌ Erreur lors de la création du package: {e}")
 
 
 @client.on(events.NewMessage(pattern='/test_invite'))
@@ -1205,7 +1331,7 @@ async def handle_excel_upload(event):
 async def handle_new_message(event):
     """
     Gère les nouveaux messages ET les messages édités dans le canal de statistiques.
-    
+
     Nouvelle logique de prédiction:
     1. Détecte si le premier groupe contient un "6" dans les cartes
     2. Si oui, vérifie la valeur #T
@@ -1214,57 +1340,57 @@ async def handle_new_message(event):
     5. Ignore les matchs nuls et les cas où total=6 ET carte=6
     """
     global active_predictions
-    
+
     if not detected_stat_channel:
         return
     if not (event.is_channel and event.chat_id == detected_stat_channel):
         return
-    
+
     message_text = event.raw_text
     game_number = predictor.extract_game_number(message_text)
-    
+
     if not game_number:
         return
-    
+
     print(f"📨 Message reçu du canal source - Jeu #{game_number}")
-    
+
     # --- ÉTAPE 1: VÉRIFICATION DES PRÉDICTIONS ACTIVES ---
     await verify_active_predictions(game_number, message_text)
-    
+
     # --- ÉTAPE 2: NOUVELLE PRÉDICTION BASÉE SUR LA DÉTECTION DU 6 ---
     if not detected_display_channel:
         print(f"⚠️ Canal de diffusion non configuré - impossible de lancer des prédictions")
         return
-    
+
     # Vérifier si le message est finalisé (✅ ou 🔰)
     if not is_finalized_message(message_text):
         print(f"⏳ Message #{game_number} pas encore finalisé - en attente")
         return
-    
+
     # Vérifier si on doit ignorer ce message
     if should_skip_prediction(message_text):
         print(f"⏭️ Message #{game_number} ignoré (match nul ou total=6 avec carte 6)")
         return
-    
+
     # Vérifier si le premier groupe contient un 6
     if not has_six_in_first_group(message_text):
         print(f"ℹ️ Pas de 6 dans le premier groupe du jeu #{game_number} - pas de prédiction")
         return
-    
+
     # Extraire la valeur #T
     t_value = extract_t_value(message_text)
     if t_value < 0:
         print(f"⚠️ Impossible d'extraire #T du jeu #{game_number}")
         return
-    
+
     # Calculer le numéro de prédiction: N + a
     predicted_numero = game_number + a_offset
-    
+
     # Vérifier si une prédiction existe déjà pour ce numéro
     if str(predicted_numero) in active_predictions:
         print(f"ℹ️ Prédiction #{predicted_numero} déjà existante - ignorée")
         return
-    
+
     # Déterminer le type de prédiction
     if t_value > 10.5:
         prediction_type = "joueur"
@@ -1274,11 +1400,11 @@ async def handle_new_message(event):
         prediction_type = "banquier"
         prediction_text = f"🔵{predicted_numero}:Ⓜ️-4,,5🔵statut :⏳"
         print(f"🎯 #T={t_value} <= 10.5 → Prédiction BANQUIER pour #{predicted_numero}")
-    
+
     # Envoyer la prédiction
     try:
         sent_message = await client.send_message(detected_display_channel, prediction_text)
-        
+
         # Enregistrer la prédiction active
         active_predictions[str(predicted_numero)] = {
             "message_id": sent_message.id,
@@ -1291,9 +1417,9 @@ async def handle_new_message(event):
             "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         save_config()
-        
+
         print(f"✅ Prédiction lancée: {prediction_text} (source: #{game_number}, #T={t_value})")
-        
+
     except Exception as e:
         print(f"❌ Erreur envoi prédiction: {e}")
 

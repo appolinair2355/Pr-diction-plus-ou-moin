@@ -219,6 +219,76 @@
       "created_at": "2025-12-02 04:05:02",
       "status": "\u274c",
       "attempts": 6
+    },
+    "725": {
+      "message_id": 558,
+      "channel_id": -1002617781803,
+      "expected": "banquier",
+      "base_text": "\ud83d\udd35725:\u24c2\ufe0f-4,,5\ud83d\udd35statut :\u23f3",
+      "source_game": 723,
+      "t_value": 4.0,
+      "verified": true,
+      "created_at": "2025-12-02 12:02:58",
+      "attempts": 1,
+      "status": "\u27051\ufe0f\u20e3"
+    },
+    "726": {
+      "message_id": 559,
+      "channel_id": -1002617781803,
+      "expected": "banquier",
+      "base_text": "\ud83d\udd35726:\u24c2\ufe0f-4,,5\ud83d\udd35statut :\u23f3",
+      "source_game": 724,
+      "t_value": 1.0,
+      "verified": true,
+      "created_at": "2025-12-02 12:03:56",
+      "attempts": 2,
+      "status": "\u27052\ufe0f\u20e3"
+    },
+    "753": {
+      "message_id": 562,
+      "channel_id": -1002617781803,
+      "expected": "banquier",
+      "base_text": "\ud83d\udd35753:\u24c2\ufe0f-4,,5\ud83d\udd35statut :\u23f3",
+      "source_game": 751,
+      "t_value": 10.0,
+      "verified": true,
+      "created_at": "2025-12-02 12:30:37",
+      "attempts": 2,
+      "status": "\u27052\ufe0f\u20e3"
+    },
+    "755": {
+      "message_id": 564,
+      "channel_id": -1002617781803,
+      "expected": "joueur",
+      "base_text": "\ud83d\udd35755:\ud83c\udd7f\ufe0f+6,5\ud83d\udd35statut :\u23f3",
+      "source_game": 753,
+      "t_value": 16.0,
+      "verified": true,
+      "created_at": "2025-12-02 12:32:35",
+      "attempts": 2,
+      "status": "\u27052\ufe0f\u20e3"
+    },
+    "757": {
+      "message_id": 565,
+      "channel_id": -1002617781803,
+      "expected": "joueur",
+      "base_text": "\ud83d\udd35757:\ud83c\udd7f\ufe0f+6,5\ud83d\udd35statut :\u23f3",
+      "source_game": 755,
+      "t_value": 16.0,
+      "verified": true,
+      "created_at": "2025-12-02 12:33:18",
+      "status": "\u27050\ufe0f\u20e3",
+      "attempts": 0
+    },
+    "766": {
+      "message_id": 567,
+      "channel_id": -1002617781803,
+      "expected": "joueur",
+      "base_text": "\ud83d\udd35766:\ud83c\udd7f\ufe0f+6,5\ud83d\udd35statut :\u23f3",
+      "source_game": 764,
+      "t_value": 12.0,
+      "verified": false,
+      "created_at": "2025-12-02 12:43:13"
     }
   }
 }
